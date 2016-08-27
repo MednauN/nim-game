@@ -8,11 +8,12 @@ import
   random,
   sdl2/sdl, sdl2/sdl_image as img
 
+import world, tilemap
 
 const
-  Title = "SDL2 App"
-  ScreenW = 640 # Window width
-  ScreenH = 480 # Window height
+  Title = "Game App"
+  ScreenW = 1280 # Window width
+  ScreenH = 720 # Window height
   WindowFlags = 0
   RendererFlags = sdl.RendererAccelerated or sdl.RendererPresentVsync
 
@@ -22,95 +23,6 @@ type
   AppObj = object
     window*: sdl.Window # Window pointer
     renderer*: sdl.Renderer # Rendering state pointer
-
-
-  Image = ref ImageObj
-  ImageObj = object of RootObj
-    texture: sdl.Texture # Image texture
-    w, h: int # Image dimensions
-
-
-#########
-# IMAGE #
-#########
-
-proc newImage(): Image = Image(texture: nil, w: 0, h: 0)
-proc free(obj: Image) = sdl.destroyTexture(obj.texture)
-proc w(obj: Image): int {.inline.} = return obj.w
-proc h(obj: Image): int {.inline.} = return obj.h
-
-# blend
-proc blend(obj: Image): sdl.BlendMode =
-  var blend: sdl.BlendMode
-  if obj.texture.getTextureBlendMode(addr(blend)) == 0:
-    return blend
-  else:
-    return sdl.BlendModeBlend
-
-proc `blend=`(obj: Image, mode: sdl.BlendMode) {.inline.} =
-  discard obj.texture.setTextureBlendMode(mode)
-
-# alpha
-proc alpha(obj: Image): int =
-  var alpha: uint8
-  if obj.texture.getTextureAlphaMod(addr(alpha)) == 0:
-    return alpha
-  else:
-    return 255
-
-proc `alpha=`(obj: Image, alpha: int) =
-  discard obj.texture.setTextureAlphaMod(alpha.uint8)
-
-
-# Load image from file
-# Return true on success or false, if image can't be loaded
-proc load(obj: Image, renderer: sdl.Renderer, file: string): bool =
-  result = true
-  # Load image to texture
-  obj.texture = renderer.loadTexture(file)
-  if obj.texture == nil:
-    sdl.logCritical(sdl.LogCategoryError,
-                    "Can't load image %s: %s",
-                    file, img.getError())
-    return false
-  # Get image dimensions
-  var w, h: cint
-  if obj.texture.queryTexture(nil, nil, addr(w), addr(h)) != 0:
-    sdl.logCritical(sdl.LogCategoryError,
-                    "Can't get texture attributes: %s",
-                    sdl.getError())
-    sdl.destroyTexture(obj.texture)
-    return false
-  obj.w = w
-  obj.h = h
-
-
-# Render texture to screen
-proc render(obj: Image, renderer: sdl.Renderer, x, y: int): bool =
-  var rect = sdl.Rect(x: x, y: y, w: obj.w, h: obj.h)
-  if renderer.renderCopy(obj.texture, nil, addr(rect)) == 0:
-    return true
-  else:
-    return false
-
-
-# Render transformed texture to screen
-proc renderEx(obj: Image, renderer: sdl.Renderer, x, y: int,
-              w = 0, h = 0, angle = 0.0, centerX = -1, centerY = -1,
-              flip = sdl.FlipNone): bool =
-  var
-    rect = sdl.Rect(x: x, y: y, w: obj.w, h: obj.h)
-    centerObj = sdl.Point(x: centerX, y: centerY)
-    center: ptr sdl.Point = nil
-  if w != 0: rect.w = w
-  if h != 0: rect.h = h
-  if not (centerX == -1 and centerY == -1): center = addr(centerObj)
-  if renderer.renderCopyEx(obj.texture, nil, addr(rect),
-                           angle, center, flip) == 0:
-    return true
-  else:
-    return false
-
 
 ##########
 # COMMON #
@@ -203,6 +115,10 @@ proc events(pressed: var seq[sdl.Keycode]): bool =
 # MAIN #
 ########
 
+var myWorld: World = newWorld()
+
+echo myWorld.level.map
+
 var
   app = App(window: nil, renderer: nil)
   done = false # Main loop exit condition
@@ -220,49 +136,13 @@ if init(app):
                   sdl.getError())
 
     # Drawing
-
-    # Point
-    discard app.renderer.setRenderDrawColor(0xFF, 0x00, 0x00, 0xFF)
-    discard app.renderer.renderDrawPoint(10, 10)
-
-    # Line
-    discard app.renderer.setRenderDrawColor(0x00, 0xFF, 0x00, 0xFF)
-    discard app.renderer.renderDrawLine(10, 20, 110, 20)
-
-    # Rect
-    discard app.renderer.setRenderDrawColor(0x00, 0x00, 0xFF, 0xFF)
-    var rect = sdl.Rect(x: 10, y: 30, w: 100, h: 50)
-    discard app.renderer.renderDrawRect(addr(rect))
-
-    # Fill rect
-    discard app.renderer.setRenderDrawColor(0xFF, 0xFF, 0x00, 0xFF)
-    rect.y = 90
-    discard app.renderer.renderFillRect(addr(rect))
-
-    # Random points
-    discard app.renderer.setRenderDrawColor(0xFF, 0xFF, 0xFF, 0xFF)
-    rect.x = 120
-    rect.y = 10
-    rect.w = 510
-    rect.h = 460
-    discard app.renderer.renderDrawRect(addr(rect))
-    const numPoints = 100
-    var points: array[numPoints, sdl.Point]
-    for i in 0..numPoints-1:
-      points[i].x = rect.x + 1 + random(rect.w - 2)
-      points[i].y = rect.y + 1 + random(rect.h - 2)
-    discard app.renderer.renderDrawPoints(addr(points[0]), numPoints)
-
-    # Connected lines
-    discard app.renderer.setRenderDrawColor(0xFF, 0x00, 0xFF, 0xFF)
-    var figure: array[6, sdl.Point]
-    figure[0] = Point(x: 60, y: 150)  # top
-    figure[1] = Point(x: 92, y: 250)  # bottom-right
-    figure[2] = Point(x: 10, y: 188)  # left
-    figure[3] = Point(x: 110, y: 188) # right
-    figure[4] = Point(x: 28, y: 250)  # bottom-left
-    figure[5] = figure[0]
-    discard app.renderer.renderDrawLines(addr(figure[0]), 6)
+    for v, tile in myWorld.level.map:
+      if tile.passable:
+        discard app.renderer.setRenderDrawColor(0x20, 0x20, 0x20, 0xFF)
+      else:
+        discard app.renderer.setRenderDrawColor(0x80, 0x80, 0x80, 0xFF)
+      var rect = sdl.Rect(x: 32 * v.x, y: 32 * v.y, w: 32, h: 32)
+      discard app.renderer.renderFillRect(addr(rect))
 
     # Update renderer
     app.renderer.renderPresent()
@@ -272,4 +152,3 @@ if init(app):
 
 # Shutdown
 exit(app)
-
