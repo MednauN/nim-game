@@ -1,5 +1,8 @@
 # Copyright Evgeny Zuev 2016.
 
+import future, options, sequtils
+export future, options
+
 type Vec2i* = object
   x*, y*: int
 
@@ -10,3 +13,8 @@ template `?`*(cond: untyped, vals: (untyped, untyped)): untyped =
     vals[0]
   else:
     vals[1]
+
+proc findIf*[T](seq1: seq[T], pred: proc (x: T): bool {.closure.}): Option[T] =
+  for x in filter(seq1, pred):
+    return some(x)
+  return none(T)

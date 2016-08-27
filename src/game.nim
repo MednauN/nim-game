@@ -144,11 +144,28 @@ if init(app):
       var rect = sdl.Rect(x: 32 * v.x, y: 32 * v.y, w: 32, h: 32)
       discard app.renderer.renderFillRect(addr(rect))
 
+    for obj in myWorld.level.objects:
+      discard app.renderer.setRenderDrawColor(0xFF, 0x00, 0x00, 0xFF)
+      var rect = sdl.Rect(x: 32 * obj.pos.x, y: 32 * obj.pos.y, w: 32, h: 32)
+      discard app.renderer.renderFillRect(addr(rect))
     # Update renderer
     app.renderer.renderPresent()
 
     # Event handling
     done = events(pressed)
+
+    let player = myWorld.level.player
+    var playerPos = player.pos
+    for key in pressed:
+      if key == sdl.K_W:
+        playerPos.y -= 1
+      elif key == sdl.K_S:
+        playerPos.y += 1
+      elif key == sdl.K_A:
+        playerPos.x -= 1
+      elif key == sdl.K_D:
+        playerPos.x += 1
+    myWorld.level.moveObject(player, playerPos)
 
 # Shutdown
 exit(app)
