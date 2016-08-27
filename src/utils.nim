@@ -1,7 +1,7 @@
 # Copyright Evgeny Zuev 2016.
 
-import future, options, sequtils
-export future, options
+import future, options, logging, sequtils
+export future, options, logging
 
 type Vec2i* = object
   x*, y*: int
