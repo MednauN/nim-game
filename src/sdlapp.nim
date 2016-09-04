@@ -1,7 +1,6 @@
 # Copyright Evgeny Zuev 2016.
 
 import sdl2/sdl, sdl2/sdl_image as img
-import colors
 import utils
 import world, tilemap
 
@@ -32,9 +31,16 @@ template sdlCall(methodToCall: untyped) =
   let ec {.gensym.} = methodToCall
   raiseIf(ec != 0, "sdl call error " & $ec)
 
-proc setColor(this: sdl.Renderer, color: colors.Color) =
-  let (r, g, b) = color.extractRGB()
-  sdlCall: this.setRenderDrawColor(r, g, b, 0xFF)
+proc rgba(color: int64 or uint32): Color =
+  Color(
+    r: (color shr 16) and 0xFF,
+    g: (color shr 8) and 0xFF,
+    b: color and 0xFF,
+    a: (color shr 24) and 0xFF
+  )
+
+proc setColor(this: sdl.Renderer, color: Color) =
+  sdlCall: this.setRenderDrawColor(color.r, color.g, color.b, color.a)
 
 proc fillRect(this: sdl.Renderer, x, y, w, h: int) =
   var rect = sdl.Rect(x: x, y: y, w: w, h: h)
@@ -82,33 +88,32 @@ proc initSDLApp*(title: string, world: World): SDLApp =
 
 proc render*(this: SDLApp) =
   let r = this.renderer
-  r.setColor(colBlack)
+  r.setColor(rgba(0xFF000000))
   sdlCall: r.renderClear()
 
   let level = this.world.level
   for v, tile in level.map:
-    r.setColor(tile.passable ? (colors.Color(0x3D3C41), colors.Color(0x1E1D21)))
+    r.setColor(tile.passable ? (rgba(0xFF5777BC), rgba(0xFF5B24A4)))
     r.fillRect(32 * v.x, 32 * v.y, 32, 32)
 
   for obj in level.objects:
-    r.setColor(colors.Color(0x5F5293))
+    case obj.kind
+    of woPlayer:
+      r.setColor(rgba(0xFFA07BD2))
+    of woNPC:
+      r.setColor(rgba(0xFF088F4A))
     r.fillRect(32 * obj.pos.x, 32 * obj.pos.y, 32, 32)
 
   r.renderPresent()
 
 proc onKeyDown(this: SDLApp, key: sdl.Keycode) =
-  let player = this.world.level.player
-  var playerPos = player.pos
-
   case key:
-  of sdl.K_W: playerPos.y -= 1
-  of sdl.K_S: playerPos.y += 1
-  of sdl.K_A: playerPos.x -= 1
-  of sdl.K_D: playerPos.x += 1
+  of sdl.K_W: this.world.inputMove(dirUp)
+  of sdl.K_S: this.world.inputMove(dirDown)
+  of sdl.K_A: this.world.inputMove(dirLeft)
+  of sdl.K_D: this.world.inputMove(dirRight)
   else: discard
 
-  if playerPos != player.pos:
-    this.world.level.moveObject(player, playerPos)
 
 proc update*(this: SDLApp) =
   var e: sdl.Event
