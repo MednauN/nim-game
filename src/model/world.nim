@@ -10,7 +10,7 @@ type LogicError = object of Exception
 
 type ObjectActionKind* = enum
   aMove,
-  aLoot
+  aInteract
 
 type WorldObjectKind* = enum
   woPlayer,
@@ -52,8 +52,8 @@ type ObjectAction* = ref object
   case kind: ObjectActionKind
   of aMove:
     moveDir: Direction
-  of aLoot:
-    lootWhat: WorldObjectId
+  of aInteract:
+    objectId: WorldObjectId
 
 proc newActionMove*(moveDir: Direction): ObjectAction =
   ObjectAction(
@@ -62,12 +62,17 @@ proc newActionMove*(moveDir: Direction): ObjectAction =
     needAP: 10
   )
 
+type SecondaryStat* = enum
+  sstMinDamage,
+  sstMaxDamage,
+
+
 type WorldObject* = ref object
   id: WorldObjectId
   pos: Vec2i
   kind: WorldObjectKind
 
-  hp, mp: RegVal
+  hp: RegVal
 
   action: ObjectAction
 
@@ -82,8 +87,7 @@ proc newWorldObject*(id: WorldObjectId, pos: Vec2i, kind: WorldObjectKind): Worl
     pos: pos,
     kind: kind,
     action: nil,
-    hp: newRegVal(100, 10 * ONE_TICK, 100),
-    mp: newRegVal(100, 10 * ONE_TICK, 100)
+    hp: newRegVal(100, 10 * ONE_TICK, 100)
   )
 
 type WorldLevel* = ref object

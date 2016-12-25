@@ -1,6 +1,6 @@
 # Copyright Evgeny Zuev 2016.
 
-import sdl2/sdl, sdl2/sdl_image as img
+import sdl2/sdl, sdl2/sdl_image as img, sdl2/sdl_ttf as ttf
 import model.utils
 import model.world, model.tilemap
 
@@ -46,10 +46,19 @@ proc fillRect(this: sdl.Renderer, x, y, w, h: int) =
   var rect = sdl.Rect(x: x, y: y, w: w, h: h)
   sdlCall: this.renderFillRect(addr(rect))
 
+proc renderText(this: sdl.Renderer, pos: Vec2i, text: string, font: ttf.Font, color: Color) =
+  var surface = font.renderUTF8_Blended(text, color)
+  var texture = sdl.createTextureFromSurface(this, surface)
+  var rect = sdl.Rect(x: pos.x, y: pos.y, w: surface.w, h: surface.h)
+  sdlCall: this.renderCopy(texture, nil, addr(rect))
+  destroyTexture(texture)
+  sdl.freeSurface(surface)
+
 type SDLApp* = ref object
   alive: bool
   window: sdl.Window
   renderer: sdl.Renderer
+  font: ttf.Font
   world: World
 
 proc alive*(this: SDLApp): bool = this.alive
@@ -70,6 +79,8 @@ proc initSDLApp*(title: string, world: World): SDLApp =
 
   sdlCall: sdl.init(sdl.InitVideo)
 
+  sdlCall: ttf.init()
+
   result.window = sdl.createWindow(
     title,
     sdl.WindowPosUndefined,
@@ -83,10 +94,13 @@ proc initSDLApp*(title: string, world: World): SDLApp =
   result.renderer = sdl.createRenderer(result.window, -1, RendererFlags)
   raiseIf(result.renderer == nil, "Can't create renderer")
 
+  result.font = ttf.openFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
+  raiseIf(result.font == nil, "Cannot load font")
+
   result.alive = true
   info "SDL initialized"
 
-proc render*(this: SDLApp) =
+proc renderFrame*(this: SDLApp) =
   let r = this.renderer
   r.setColor(rgba(0xFF000000))
   sdlCall: r.renderClear()
@@ -103,6 +117,8 @@ proc render*(this: SDLApp) =
     of woNPC:
       r.setColor(rgba(0xFF088F4A))
     r.fillRect(32 * obj.pos.x, 32 * obj.pos.y, 32, 32)
+
+  r.renderText(vec(650, 10), "Hello, world", this.font, rgba(0xFFffffff))
 
   r.renderPresent()
 
@@ -135,6 +151,8 @@ proc update*(this: SDLApp) =
 proc destroy*(this: SDLApp) =
   this.renderer.destroyRenderer()
   this.window.destroyWindow()
+  ttf.closeFont(this.font)
+  ttf.quit()
   img.quit()
   info "SDL destroyed"
   sdl.quit()

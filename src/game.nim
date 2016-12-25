@@ -11,7 +11,7 @@ try:
 
   while sdlApp.alive:
     sdlApp.update()
-    sdlApp.render()
+    sdlApp.renderFrame()
 
   sdlApp.destroy()
 except:
