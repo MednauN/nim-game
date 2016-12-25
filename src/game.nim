@@ -1,8 +1,8 @@
 # Copyright Evgeny Zuev 2016.
 
-import utils
-import sdlapp
-import world
+import model.utils
+import visual.sdlapp
+import model.world
 
 try:
   var myWorld: World = newWorld()

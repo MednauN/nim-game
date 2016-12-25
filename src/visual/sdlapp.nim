@@ -1,8 +1,8 @@
 # Copyright Evgeny Zuev 2016.
 
 import sdl2/sdl, sdl2/sdl_image as img
-import utils
-import world, tilemap
+import model.utils
+import model.world, model.tilemap
 
 const ScreenSize = vec(1280, 720)
 const WindowFlags = 0
