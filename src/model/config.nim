@@ -4,86 +4,145 @@ import utils
 import tables
 
 type
+
+  #---Common---
+
   PrimaryStat* = enum
-    psStrength
-    psAgility
-    psIntelligence
+    statStrength
+    statMastery
+    statConcentration
+
+  SocialStat* = enum
+    statCharm
+    statPersuation
+    statIntimidation
+
+  DamageType* = enum
+    # Physical
+    dtBlunt
+    dtPiercing
+    # Magical
+    dtArcane
+    dtChaotic
+    # Mixed
+    dtFire
+    dtPoison
+
+  #---Items---
 
   ItemKind* = enum
     ikWeapon
     ikArmor
-    ikConsumable
-    ikMaterial
+    ikOther
 
   EquipmentSlot* = enum
-    esMainHand
-    esOffHand
-    esHead
-    esBody
-    esLegs
-    esFeet
+    # Weapon slots
+    slotMainHand
+    slotOffHand
+    # Armor slots
+    slotHead
+    slotBody
+    slotArms
+    slotLegs
+    slotFeet
 
-  ItemConfig* = ref object
+  ItemQualityClass* = enum
+    qualityJunk
+    qualityCommon
+    qualityGood
+    qualityExellent
+    qualityTreasure
+    qualityArtifact
+
+  WeaponClassConfig* = ref object
     id*: string
+    name*: string
+    possibleModifiers*: seq[string]
     slots*: set[EquipmentSlot]
-    case kind*: ItemKind
-    of ikWeapon:
-      minDamage*: int
-      maxDamage*: int
-    of ikArmor:
-      defense*: int
-    of ikConsumable, ikMaterial:
-      discard
+    primaryDamage*: DamageType
+    secondaryDamage*: seq[DamageType]
+    attackSpeed*: float
+    attackRange*: int
+    damageSpread*: float
 
-  SkillEffectModifier* = enum
-    emNone
-    emStrength
-    emAgility
-    emIntelligence
-    emDamageMainHand
-    emDamageOffHand
-    emDamageBothHands
+  ArmorClassConfig* = ref object
+    id*: string
+    name*: string
+    possibleModifiers*: seq[string]
+    slots*: set[EquipmentSlot]
+    primaryDefenses*: seq[string]
+    secondaryDefenses*: seq[string]
 
-  SkillEffectKind* = enum
-    ekDamage
+  EquipmentModifier* = ref object
+    id*: string
+    isMajor*: bool
+    namePattern*: string
+    qualityMult*: float
+    statsBalance*: TableRef[PrimaryStat, float]
+    damageTypeBalance*: TableRef[DamageType, float]
 
-  SkillEffect* = ref object
-    modifier*: SkillEffectModifier
-    power*: float
-    kind*: SkillEffectKind
+  GlobalItemsConfig* = ref object
+    weapons*: Table[string, WeaponClassConfig]
+    armor*: Table[string, ArmorClassConfig]
+    modifiers*: Table[string, EquipmentModifier]
+
+  #---Skills---
+
+  SkillRequirements* = ref object
+    weapons*: seq[string]
+    damageTypes*: seq[DamageType]
+
+  SkillLogicType* = enum
+    slWeaponDamage
+    slDirectDamage
 
   SkillConfig* = ref object
     id*: string
+    name*: string
+    description*: string
+    castMessage*: string
+    possibleModifiers*: seq[string]
     apCost*: int
-    maxDistance*: int
-    effects*: seq[SkillEffect]
+    spCost*: int
+    requirements*: SkillRequirements
+    basePower*: float
+    statMultipliers*: Table[PrimaryStat, float]
+    case logic*: SkillLogicType
+    of slDirectDamage:
+      damageType*: DamageType,
+      skillRange*: int
+    of slWeaponDamage: discard
+
+  SkillModifier* = ref object
+    id*: string
+    namePattern*: string
+    powerMult*: float
+    chanceWeight*: float
+
+  GlobalSkillsConfig* = ref object
+    skills*: Table[string, SkillConfig]
+    modifiers*: Table[string, SkillModifier]
+
+  #---Mobs---
+
+  MonsterClassConfig* = ref object
+    id*: string
+    name*: string
+    possibleModifiers*: seq[string]
+    moraleMult*: float
+    powerMult*: float
+
+  #---Global---
 
   PlayerConfig* = ref object
-    skills*: seq[string]
+    startSkills*: seq[string]
 
   GameConfig* = ref object
-    skills*: TableRef[string, SkillConfig]
+    skills*: GlobalSkillConfig
+    items*: GlobalItemConfig
     player*: PlayerConfig
-    items*: TableRef[string, ItemConfig]
 
 var gConfig: GameConfig
 
 proc initConfig*() =
-  gConfig = GameConfig(
-    skills: newTable[string, SkillConfig]()
-  )
-  gConfig.player = PlayerConfig(
-    skills: @["attack"]
-  )
-
-  gConfig.skills["attack"] = SkillConfig(
-    id: "attack",
-    apCost: 10,
-    maxDistance: 1,
-    effects: @[]
-  )
-  gConfig.skills["attack"].effects.add(SkillEffect(
-    kind: ekDamage,
-    modifier: emDamageMainHand,
-    power: 1.0
-  ))
+  discard #TODO

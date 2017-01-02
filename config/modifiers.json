@@ -1,0 +1,77 @@
+[
+  {
+    "id": "rusty",
+    "isMajor": true,
+    "namePattern": "Rusty $1",
+    "qualityMult": 0.5
+  },
+  {
+    "id": "crude",
+    "isMajor": true,
+    "namePattern": "Crude $1",
+    "qualityMult": 0.75
+  },
+  {
+    "id": "normal",
+    "isMajor": true,
+    "namePattern": "$1",
+    "qualityMult": 1.0
+  },
+  {
+    "id": "fine",
+    "isMajor": true,
+    "namePattern": "Fine $1",
+    "qualityMult": 1.25
+  },
+  {
+    "id": "enchanced",
+    "isMajor": true,
+    "namePattern": "Ehchanced $1",
+    "qualityMult": 1.5
+  },
+  {
+    "id": "masterwork",
+    "isMajor": true,
+    "namePattern": "Masterwork $1",
+    "qualityMult": 1.75
+  },
+
+  // Minor
+  {
+    "id": "physical",
+    "isMajor": false,
+    "damageTypeBalance": {
+      "Blunt": 2.0,
+      "Physical": 2.0
+    }
+  },
+  {
+    "id": "magical",
+    "isMajor": false,
+    "damageTypeBalance": {
+      "Arcane": 2.0,
+      "Chaotic": 2.0
+    }
+  },
+  {
+    "id": "str_base",
+    "isMajor": false,
+    "statsBalance": {
+      "Strength": 2.0
+    }
+  },
+  {
+    "id": "mas_base",
+    "isMajor": false,
+    "statsBalance": {
+      "Mastery": 2.0
+    }
+  },
+  {
+    "id": "con_base",
+    "isMajor": false,
+    "statsBalance": {
+      "Concentration": 2.0
+    }
+  }
+]

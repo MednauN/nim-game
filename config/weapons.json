@@ -1,0 +1,102 @@
+[
+  {
+    "id": "sword",
+    "name": "Sword",
+    "slots": ["MainHand"],
+    "primaryDamage": "Piercing",
+    "secondaryDamage": ["Fire", "Poison", "Arcane", "Chaotic"],
+    "attackSpeed": 1.0,
+    "attackRange": 1,
+    "damageSpread": 0.25
+  },
+  {
+    "id": "club",
+    "name": "Club",
+    "slots": ["MainHand"],
+    "primaryDamage": "Blunt",
+    "secondaryDamage": ["Fire", "Arcane", "Chaotic"],
+    "attackSpeed": 0.75,
+    "attackRange": 1,
+    "damageSpread": 0.75
+  },
+  {
+    "id": "dagger",
+    "name": "Dagger",
+    "slots": ["MainHand"],
+    "primaryDamage": "Piercing",
+    "secondaryDamage": ["Fire", "Poison", "Arcane", "Chaotic"],
+    "attackSpeed": 1.25,
+    "attackRange": 1,
+    "damageSpread": 0.5
+  },
+  {
+    "id": "two_handed_sword",
+    "name": "Two-Handed Sword",
+    "slots": ["MainHand", "OffHand"],
+    "primaryDamage": "Piercing",
+    "secondaryDamage": ["Fire", "Poison", "Arcane", "Chaotic"],
+    "attackSpeed": 0.5,
+    "attackRange": 2,
+    "damageSpread": 0.25
+  },
+  {
+    "id": "hammer",
+    "name": "Hammer",
+    "slots": ["MainHand", "OffHand"],
+    "primaryDamage": "Blunt",
+    "secondaryDamage": ["Fire", "Arcane", "Chaotic"],
+    "attackSpeed": 0.5,
+    "attackRange": 2,
+    "damageSpread": 0.75
+  },
+  {
+    "id": "bow",
+    "name": "Bow",
+    "slots": ["MainHand", "OffHand"],
+    "primaryDamage": "Piercing",
+    "secondaryDamage": ["Fire", "Poison", "Arcane", "Chaotic"],
+    "attackSpeed": 1.0,
+    "attackRange": 4,
+    "damageSpread": 0.75
+  },
+  {
+    "id": "crossbow",
+    "name": "Crossow",
+    "slots": ["MainHand", "OffHand"],
+    "primaryDamage": "Piercing",
+    "secondaryDamage": ["Fire", "Poison", "Arcane", "Chaotic"],
+    "attackSpeed": 0.5,
+    "attackRange": 4,
+    "damageSpread": 0.25
+  },
+  {
+    "id": "musket",
+    "name": "Musket",
+    "slots": ["MainHand"],
+    "primaryDamage": "Blunt",
+    "secondaryDamage": ["Fire", "Arcane", "Chaotic"],
+    "attackSpeed": 0.5,
+    "attackRange": 4,
+    "damageSpread": 0.2
+  },
+  {
+    "id": "staff",
+    "name": "Staff",
+    "slots": ["MainHand", "OffHand"],
+    "primaryDamage": "Blunt",
+    "secondaryDamage": ["Fire", "Arcane", "Chaotic"],
+    "attackSpeed": 0.75,
+    "attackRange": 2,
+    "damageSpread": 0.25
+  },
+  {
+    "id": "rod",
+    "name": "Rod",
+    "slots": ["MainHand"],
+    "primaryDamage": "Blunt",
+    "secondaryDamage": ["Fire", "Arcane", "Chaotic"],
+    "attackSpeed": 1.0,
+    "attackRange": 1,
+    "damageSpread": 0.25
+  }
+]

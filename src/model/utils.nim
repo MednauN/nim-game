@@ -1,6 +1,6 @@
 # Copyright Evgeny Zuev 2016.
 
-import future, options, logging, sequtils
+import future, options, logging, sequtils, macros
 export future, options, logging
 
 type Vec2i* = object
@@ -30,11 +30,13 @@ iterator directions*(): Direction =
   yield(dirLeft)
   yield(dirRight)
 
-template `?`*(cond: untyped, vals: (untyped, untyped)): untyped =
-  if cond:
-    vals[0]
-  else:
-    vals[1]
+macro `?`*(cond, body: untyped): untyped =
+  if body.kind != nnkInfix or not eqIdent(body[0], "or"):
+    error("'or' exprected")
+  let arg1 = body[1]
+  let arg2 = body[2]
+  result = quote do:
+    (if `cond`: `arg1` else: `arg2`)
 
 proc findIf*[T](seq1: seq[T], pred: proc (x: T): bool {.closure.}): Option[T] =
   for x in filter(seq1, pred):

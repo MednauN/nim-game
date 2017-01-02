@@ -1,0 +1,42 @@
+[
+  {
+    "id": "helmet",
+    "name": "Helmet",
+    "possibleModifiers": [],
+    "slots": ["Head"],
+    "primaryDefenses": ["Blunt", "Piercing"],
+    "secondaryDefenses": ["Arcane", "Chaotic", "Fire", "Poison"]
+  },
+  {
+    "id": "mail_armor",
+    "name": "Mail Armor",
+    "possibleModifiers": [],
+    "slots": ["Body"],
+    "primaryDefenses": ["Blunt", "Arcane"],
+    "secondaryDefenses": ["Piercing", "Chaotic", "Fire", "Poison"]
+  },
+  {
+    "id": "mail_gloves",
+    "name": "Mail Gloves",
+    "possibleModifiers": [],
+    "slots": ["Body"],
+    "primaryDefenses": ["Blunt", "Arcane"],
+    "secondaryDefenses": ["Piercing", "Chaotic", "Fire", "Poison"]
+  },
+  {
+    "id": "mail_leggings",
+    "name": "Mail Leggings",
+    "possibleModifiers": [],
+    "slots": ["Legs"],
+    "primaryDefenses": ["Blunt", "Arcane"],
+    "secondaryDefenses": ["Piercing", "Chaotic", "Fire", "Poison"]
+  },
+  {
+    "id": "mail_boots",
+    "name": "Mail Boots",
+    "possibleModifiers": [],
+    "slots": ["Feet"],
+    "primaryDefenses": ["Blunt", "Arcane"],
+    "secondaryDefenses": ["Piercing", "Chaotic", "Fire", "Poison"]
+  }
+]

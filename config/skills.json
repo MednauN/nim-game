@@ -1,0 +1,66 @@
+[
+  {
+    "id": "basic_attack",
+    "name": "Attack",
+    "castMessage": "$1 attacks $2",
+    "possibleModifiers": [],
+    "apCost": 10,
+    "spCost": 0,
+    "logic": "WeaponDamage",
+    "basePower": 1.0
+  },
+  {
+    "id": "crushing_attack",
+    "name": "Crushing Attack",
+    "apCost": 15,
+    "spCost": 10,
+    "requirements": {
+      "damageTypes": ["Blunt"]
+    },
+    "logic": "WeaponDamage",
+    "basePower": 1.5,
+    "statMultipliers": {
+      "Strength": 1.0
+    }
+  },
+  {
+    "id": "piercing_attack",
+    "name": "Piercing Attack",
+    "apCost": 7,
+    "spCost": 10,
+    "requirements": {
+      "damageTypes": ["Piercing"]
+    },
+    "logic": "WeaponDamage",
+    "basePower": 1.0,
+    "statMultipliers": {
+      "Mastery": 1.0
+    }
+  },
+  {
+    "id": "magic_arrow",
+    "name": "Magic Arrow",
+    "apCost": 10,
+    "spCost": 10,
+    "logic": "DirectDamage",
+    "basePower": 1.0,
+    "statMultipliers": {
+      "Concentration": 1.0
+    },
+    "damageType": "Arcane",
+    "skillRange": 4
+  },
+  {
+    "id": "energy_burst",
+    "name": "Energy Burst",
+    "apCost": 10,
+    "spCost": 15,
+    "logic": "DirectDamage",
+    "basePower": 2.0,
+    "statMultipliers": {
+      "Concentration": 1.0
+    },
+    "damageType": "Chaotic",
+    "skillRange": 2
+  }
+]

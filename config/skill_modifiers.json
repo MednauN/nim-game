@@ -1,0 +1,14 @@
+[
+  {
+    "id": "lesser",
+    "namePattern": "Lesser $1",
+    "powerMult": 0.5,
+    "chanceWeight": 10.0
+  },
+  {
+    "id": "greater",
+    "namePattern": "Greater $1",
+    "powerMult": 1.5,
+    "chanceWeight": 0.1
+  }
+]
