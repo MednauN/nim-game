@@ -109,9 +109,10 @@ type
     statMultipliers*: Table[PrimaryStat, float]
     case logic*: SkillLogicType
     of slDirectDamage:
-      damageType*: DamageType,
+      damageType*: DamageType
       skillRange*: int
-    of slWeaponDamage: discard
+    of slWeaponDamage:
+      discard
 
   SkillModifier* = ref object
     id*: string
@@ -123,14 +124,26 @@ type
     skills*: Table[string, SkillConfig]
     modifiers*: Table[string, SkillModifier]
 
-  #---Mobs---
+  #---Monsters---
 
   MonsterClassConfig* = ref object
     id*: string
     name*: string
     possibleModifiers*: seq[string]
+    possibleWeapons*: seq[string]
+    possibleSkills*: seq[string]
     moraleMult*: float
-    powerMult*: float
+    defenseMult*: Table[string, DamageType]
+
+  #---Dungeons---
+
+  DungeonFloorConfig* = ref object
+    id*: string
+    monsters*: seq[string]
+
+  DungeonConfig* = ref object
+    id*: string
+    possibleFloors*: seq[string]
 
   #---Global---
 
@@ -138,11 +151,16 @@ type
     startSkills*: seq[string]
 
   GameConfig* = ref object
-    skills*: GlobalSkillConfig
-    items*: GlobalItemConfig
+    skills*: GlobalSkillsConfig
+    items*: GlobalItemsConfig
+    monsters*: Table[string, MonsterClassConfig]
+    dungeons*: Table[string, DungeonConfig]
     player*: PlayerConfig
 
 var gConfig: GameConfig
 
 proc initConfig*() =
   discard #TODO
+
+proc config*(): GameConfig =
+  gConfig
