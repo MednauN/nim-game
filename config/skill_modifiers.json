@@ -6,6 +6,12 @@
     "chanceWeight": 10.0
   },
   {
+    "id": "normal",
+    "namePattern": "$1",
+    "powerMult": 1.0,
+    "chanceWeight": 1.0
+  },
+  {
     "id": "greater",
     "namePattern": "Greater $1",
     "powerMult": 1.5,

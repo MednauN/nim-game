@@ -11,7 +11,7 @@ type TileMap* = ref object
 
 #---TileInfo methods
 proc `$`*(this: TileInfo): string =
-  this.passable ? (".", "#")
+  this.passable ? "." or "#"
 
 proc passable*(this: TileInfo): bool {.inline.} =
   this.passable
@@ -38,7 +38,7 @@ proc newTileMap*(size: Vec2i): TileMap =
   )
   #TODO make generator
   for v in result.cells:
-    result[v].passable = (v.x == 0 or v.y == 0 or v.x == size.x - 1 or v.y == size.y - 1) ? (false, true)
+    result[v].passable = not (v.x == 0 or v.y == 0 or v.x == size.x - 1 or v.y == size.y - 1)
 
 proc `$`*(this: TileMap): string =
   result = ""

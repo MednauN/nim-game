@@ -129,11 +129,21 @@ type
   MonsterClassConfig* = ref object
     id*: string
     name*: string
+    graphics*: string
+    levels*: Slice[int]
     possibleModifiers*: seq[string]
     possibleWeapons*: seq[string]
     possibleSkills*: seq[string]
     moraleMult*: float
+    hpMult*: float
     defenseMult*: Table[string, DamageType]
+
+  MonsterModifier* = ref object
+    id*: string
+    namePattern*: string
+    powerMult*: float
+    hpMult*: float
+    chanceWeight*: float
 
   #---Dungeons---
 

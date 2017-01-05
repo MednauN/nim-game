@@ -1,0 +1,6 @@
+[
+  {
+    "id": "start_cave",
+    "possibleFloors": ["cave", "goblin_lair"]
+  }
+]

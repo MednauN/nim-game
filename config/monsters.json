@@ -1,0 +1,36 @@
+[
+  {
+    "id": "goblin",
+    "name": "Goblin",
+    "graphics": "g",
+    "levels": [1, 10],
+    "possibleModifiers": ["weak", "normal", "warrior", "leader"],
+    "possibleWeapons": ["club", "dagger"],
+    "possibleSkills": ["attack"],
+    "moraleMult": 0.5,
+    "defenseMult": {
+      "Arcane": 0.0,
+      "Chaotic": 0.0,
+      "Fire": 0.0
+    }
+  },
+  {
+    "id": "goblin_shaman",
+    "name": "Goblin-Shaman",
+    "graphics": "G",
+    "levels": [3, 13],
+    "possibleModifiers": ["normal"],
+    "possibleWeapons": ["staff", "rod"],
+    "possibleSkills": ["attack", "energy_burst"],
+    "moraleMult": 1.0
+  },
+  {
+    "id": "kobold",
+    "name": "Kobold",
+    "graphics": "k",
+    "levels": [5, 20],
+    "possibleModifiers": ["weak", "normal", "warrior", "leader"],
+    "possibleWeapons": ["sword", "club", "bow"],
+    "possibleSkills": ["attack"]
+  }
+]

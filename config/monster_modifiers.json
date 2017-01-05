@@ -1,0 +1,25 @@
+[
+  {
+    "id": "weak",
+    "namePattern": "Weak $1",
+    "powerMult": 0.5,
+    "chanceWeight": 1.0
+  },
+  {
+    "id": "normal",
+    "namePattern": "$1",
+    "chanceWeight": 1.0
+  },
+  {
+    "id": "warrior",
+    "namePattern": "$1 Warrior",
+    "powerMult": 1.25,
+    "chanceWeight": 0.25
+  },
+  {
+    "id": "leader",
+    "namePattern": "$1 Leader",
+    "powerMult": 1.5,
+    "chanceWeight": 0.12
+  }
+]

@@ -107,7 +107,7 @@ proc renderFrame*(this: SDLApp) =
 
   let level = this.world.level
   for v, tile in level.map:
-    r.setColor(tile.passable ? (rgba(0xFF5777BC), rgba(0xFF5B24A4)))
+    r.setColor(tile.passable ? rgba(0xFF5777BC) or rgba(0xFF5B24A4))
     r.fillRect(32 * v.x, 32 * v.y, 32, 32)
 
   for obj in level.objects:

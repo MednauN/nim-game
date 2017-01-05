@@ -170,7 +170,7 @@ proc playOnce(this: World, maxdt: int): int =
   if objects.len == 0:
     return 0
 
-  let dt = objects.len == 0 ? (maxdt, min(objects[0].action.needAP, maxdt))
+  let dt = objects.len == 0 ? maxdt or min(objects[0].action.needAP, maxdt)
   for obj in objects:
     obj.action.needAP -= dt
     if obj.action.needAP == 0:

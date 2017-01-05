@@ -1,7 +1,7 @@
 {
     "version": "0.1.0",
-    "command": "nimble",
+    "command": "nim",
     "isShellCommand": true,
-    "args": ["build", "--verbose"],
+    "args": ["build"],
     "showOutput": "always"
 }

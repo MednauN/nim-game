@@ -1,0 +1,10 @@
+[
+  {
+    "id": "cave",
+    "monsters": ["goblin", "kobold"]
+  },
+  {
+    "id": "goblin_lair",
+    "monsters": ["goblin", "goblin_shaman"]
+  }
+]
