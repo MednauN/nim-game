@@ -1,6 +1,6 @@
 # Copyright Evgeny Zuev 2016.
 
-import future, options, logging, sequtils, macros
+import future, options, logging, sequtils, macros, strutils
 export future, options, logging
 
 type Vec2i* = object
@@ -42,3 +42,11 @@ proc findIf*[T](seq1: seq[T], pred: proc (x: T): bool {.closure.}): Option[T] =
   for x in filter(seq1, pred):
     return some(x)
   return none(T)
+
+proc withoutPrefix*(s: string): string =
+  var i: int = 0
+  for c in s:
+    if c.isUpperAscii():
+      break
+    inc i
+  result = s[i..s.len]

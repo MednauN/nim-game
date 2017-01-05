@@ -1,10 +1,11 @@
 # Copyright Evgeny Zuev 2016.
 
 import model.utils
+import model.config, model.world
 import visual.sdlapp
-import model.world
 
 try:
+  loadConfig()
   var myWorld: World = newWorld()
 
   var sdlApp = initSDLApp("Game App", myWorld)

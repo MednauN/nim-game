@@ -1,7 +1,7 @@
 # Copyright Evgeny Zuev 2016.
 
-import utils
-import tables
+import utils, serializer
+import tables, json, streams, os
 
 type
 
@@ -82,9 +82,9 @@ type
     damageTypeBalance*: TableRef[DamageType, float]
 
   GlobalItemsConfig* = ref object
-    weapons*: Table[string, WeaponClassConfig]
-    armor*: Table[string, ArmorClassConfig]
-    modifiers*: Table[string, EquipmentModifier]
+    weapons*: TableRef[string, WeaponClassConfig]
+    armor*: TableRef[string, ArmorClassConfig]
+    modifiers*: TableRef[string, EquipmentModifier]
 
   #---Skills---
 
@@ -106,7 +106,7 @@ type
     spCost*: int
     requirements*: SkillRequirements
     basePower*: float
-    statMultipliers*: Table[PrimaryStat, float]
+    statMultipliers*: TableRef[PrimaryStat, float]
     case logic*: SkillLogicType
     of slDirectDamage:
       damageType*: DamageType
@@ -121,8 +121,8 @@ type
     chanceWeight*: float
 
   GlobalSkillsConfig* = ref object
-    skills*: Table[string, SkillConfig]
-    modifiers*: Table[string, SkillModifier]
+    skills*: TableRef[string, SkillConfig]
+    modifiers*: TableRef[string, SkillModifier]
 
   #---Monsters---
 
@@ -136,7 +136,7 @@ type
     possibleSkills*: seq[string]
     moraleMult*: float
     hpMult*: float
-    defenseMult*: Table[string, DamageType]
+    defenseMult*: TableRef[string, DamageType]
 
   MonsterModifier* = ref object
     id*: string
@@ -163,14 +163,26 @@ type
   GameConfig* = ref object
     skills*: GlobalSkillsConfig
     items*: GlobalItemsConfig
-    monsters*: Table[string, MonsterClassConfig]
-    dungeons*: Table[string, DungeonConfig]
+    monsters*: TableRef[string, MonsterClassConfig]
+    dungeons*: TableRef[string, DungeonConfig]
     player*: PlayerConfig
 
 var gConfig: GameConfig
 
-proc initConfig*() =
-  discard #TODO
+proc loadConfig*() =
+  let configDir = "config"
+  new gConfig
+  new gConfig.skills
+  new gConfig.items
+  gConfig.monsters = newTable[string, MonsterClassConfig]()
+  gConfig.dungeons = newTable[string, DungeonConfig]()
+  new gConfig.player
+  try:
+    loadTableFromFile(configDir / "skills.json", gConfig.skills.skills)
+    loadTableFromFile(configDir / "skill_modifiers.json", gConfig.skills.modifiers)
+  except:
+    echo getCurrentExceptionMsg()
+    echo getStackTrace(getCurrentException())
 
 proc config*(): GameConfig =
   gConfig
