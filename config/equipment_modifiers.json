@@ -42,7 +42,7 @@
     "isMajor": false,
     "damageTypeBalance": {
       "Blunt": 2.0,
-      "Physical": 2.0
+      "Piercing": 2.0
     }
   },
   {

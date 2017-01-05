@@ -31,6 +31,17 @@ proc fromJson*[T](obj: var seq[T], jobj: JsonNode) =
     fromJson(elem, val)
     obj.add(elem)
 
+proc fromJson*[T](obj: var set[T], jobj: JsonNode) =
+  obj = {}
+  for val in jobj:
+    var elem: T
+    fromJson(elem, val)
+    obj.incl(elem)
+
+proc fromJson*[T](obj: var Slice[T], jobj: JsonNode) =
+  fromJson(obj.a, jobj[0])
+  fromJson(obj.b, jobj[1])
+
 proc fromJson*[K: string or enum, V](obj: var TableRef[K, V], jobj: JsonNode) =
   obj = newTable[K, V]()
   for key, val in jobj:
@@ -57,8 +68,23 @@ proc fromJson*[T: ref object](obj: var T, jobj: JsonNode) =
 proc loadTableFromFile*[K, V](fname: string, outTable: var TableRef[K, V]) =
   outTable = newTable[K, V]()
   let jobj = parseFile(fname)
+  var num = 0
+  var objName = "Unknown Object"
   for val in jobj:
-    let key = val.getStr("id")
-    var data: V
-    data.fromJson(val)
-    outTable[key] = data
+    inc num
+    try:
+      let key = val["id"].getStr()
+      objName = key
+      var data: V
+      data.fromJson(val)
+      outTable[key] = data
+      objName = "Unknown Object"
+    except:
+      raise newException(IOError, "Malformed config in file $#, entry $# ($#):\n$#" % [fname, $num, objName, $val], getCurrentException())
+
+proc loadObjectFromFile*[T](fname: string, outObj: var ref T) =
+  let jobj = parseFile(fname)
+  try:
+    outObj.fromJson(jobj)
+  except:
+      raise newException(IOError, "Malformed config in file " & fname, getCurrentException())

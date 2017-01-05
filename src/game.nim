@@ -6,14 +6,17 @@ import visual.sdlapp
 
 try:
   loadConfig()
-  var myWorld: World = newWorld()
+  var myWorld = newWorld()
+  var myApp = initSDLApp("Game App", myWorld)
 
-  var sdlApp = initSDLApp("Game App", myWorld)
+  try:
+    while myApp.alive:
+      myApp.update()
+      myApp.renderFrame()
 
-  while sdlApp.alive:
-    sdlApp.update()
-    sdlApp.renderFrame()
+    myApp.destroy()
+  except:
+    error("Unhandled exception:" & $getCurrentException())
 
-  sdlApp.destroy()
 except:
-  error("Unhandled exception:" & repr(getCurrentException()))
+  echo getCurrentException()

@@ -81,11 +81,6 @@ type
     statsBalance*: TableRef[PrimaryStat, float]
     damageTypeBalance*: TableRef[DamageType, float]
 
-  GlobalItemsConfig* = ref object
-    weapons*: TableRef[string, WeaponClassConfig]
-    armor*: TableRef[string, ArmorClassConfig]
-    modifiers*: TableRef[string, EquipmentModifier]
-
   #---Skills---
 
   SkillRequirements* = ref object
@@ -120,10 +115,6 @@ type
     powerMult*: float
     chanceWeight*: float
 
-  GlobalSkillsConfig* = ref object
-    skills*: TableRef[string, SkillConfig]
-    modifiers*: TableRef[string, SkillModifier]
-
   #---Monsters---
 
   MonsterClassConfig* = ref object
@@ -136,7 +127,7 @@ type
     possibleSkills*: seq[string]
     moraleMult*: float
     hpMult*: float
-    defenseMult*: TableRef[string, DamageType]
+    defenseMult*: TableRef[DamageType, float]
 
   MonsterModifier* = ref object
     id*: string
@@ -157,6 +148,15 @@ type
 
   #---Global---
 
+  GlobalSkillsConfig* = ref object
+    skills*: TableRef[string, SkillConfig]
+    modifiers*: TableRef[string, SkillModifier]
+
+  GlobalItemsConfig* = ref object
+    weapons*: TableRef[string, WeaponClassConfig]
+    armor*: TableRef[string, ArmorClassConfig]
+    modifiers*: TableRef[string, EquipmentModifier]
+
   PlayerConfig* = ref object
     startSkills*: seq[string]
 
@@ -164,6 +164,7 @@ type
     skills*: GlobalSkillsConfig
     items*: GlobalItemsConfig
     monsters*: TableRef[string, MonsterClassConfig]
+    dungeonFloors*: TableRef[string, DungeonFloorConfig]
     dungeons*: TableRef[string, DungeonConfig]
     player*: PlayerConfig
 
@@ -174,15 +175,16 @@ proc loadConfig*() =
   new gConfig
   new gConfig.skills
   new gConfig.items
-  gConfig.monsters = newTable[string, MonsterClassConfig]()
-  gConfig.dungeons = newTable[string, DungeonConfig]()
-  new gConfig.player
-  try:
-    loadTableFromFile(configDir / "skills.json", gConfig.skills.skills)
-    loadTableFromFile(configDir / "skill_modifiers.json", gConfig.skills.modifiers)
-  except:
-    echo getCurrentExceptionMsg()
-    echo getStackTrace(getCurrentException())
+
+  loadTableFromFile(configDir / "skills.json", gConfig.skills.skills)
+  loadTableFromFile(configDir / "skill_modifiers.json", gConfig.skills.modifiers)
+  loadTableFromFile(configDir / "weapons.json", gConfig.items.weapons)
+  loadTableFromFile(configDir / "armor.json", gConfig.items.armor)
+  loadTableFromFile(configDir / "equipment_modifiers.json", gConfig.items.modifiers)
+  loadTableFromFile(configDir / "monsters.json", gConfig.monsters)
+  loadTableFromFile(configDir / "dungeon_floors.json", gConfig.dungeonFloors)
+  loadTableFromFile(configDir / "dungeons.json", gConfig.dungeons)
+  loadObjectFromFile(configDir / "player.json", gConfig.player)
 
 proc config*(): GameConfig =
   gConfig

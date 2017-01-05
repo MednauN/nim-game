@@ -6,7 +6,7 @@ import algorithm, sequtils, strutils
 type Player = ref object
   name: string
 
-type LogicError = object of Exception
+type LogicError* = object of Exception
 
 type ObjectActionKind* = enum
   aMove,

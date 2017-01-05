@@ -50,3 +50,19 @@ proc withoutPrefix*(s: string): string =
       break
     inc i
   result = s[i..s.len]
+
+template newException*(exceptn: typedesc, message: string, eParent: ref Exception): untyped =
+  var
+    e: ref exceptn
+  new(e)
+  e.msg = message
+  e.parent = eParent
+  e
+
+proc `$`*(exceptn: ref Exception): string =
+  result = exceptn.msg != nil ? exceptn.msg or ""
+  result.add("\n")
+  result.add(getStackTrace(exceptn))
+  if exceptn.parent != nil:
+    result.add("Caused by:\n")
+    result.add($exceptn.parent)
