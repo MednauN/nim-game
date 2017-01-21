@@ -1,18 +1,46 @@
 # Copyright Evgeny Zuev 2016.
 
-import future, options, logging, sequtils, macros, strutils
-export future, options, logging
+import future, options, logging, sequtils, macros, strutils, mersenne
+export future, options, logging, strutils
 
 type Vec2i* = object
   x*, y*: int
 
-proc vec*(x, y: int): Vec2i = Vec2i(x: x, y: y)
+type Rect2i* = object
+  pos*: Vec2i
+  size*: Vec2i
 
 type Direction* = enum
   dirUp,
   dirDown,
   dirLeft,
   dirRight
+
+type Random* = ref object
+  mt: MersenneTwister
+
+proc vec*(x, y: int): Vec2i = Vec2i(x: x, y: y)
+
+proc newRect*(pos: Vec2i, size: Vec2i): Rect2i =
+  Rect2i(
+    pos: pos,
+    size: size
+  )
+
+iterator perimeter*(rect: Rect2i): Vec2i =
+  for i in 0..<rect.size.x:
+    yield vec(rect.pos.x + i, rect.pos.y)
+  for i in 1..<rect.size.y:
+    yield vec(rect.pos.x + rect.size.x - 1, rect.pos.y + i)
+  for i in countdown(rect.size.x - 1, 0):
+    yield vec(rect.pos.x + i, rect.pos.y + rect.size.y - 1)
+  for i in countdown(rect.size.y - 1, 1):
+    yield vec(rect.pos.x, rect.pos.y + i)
+
+iterator cells*(rect: Rect2i): Vec2i =
+  for x in rect.pos.x..<rect.pos.x + rect.size.x:
+    for y in rect.pos.y..<rect.pos.y + rect.size.y:
+      yield vec(x, y)
 
 proc vec*(dir: Direction): Vec2i =
   case dir
@@ -23,6 +51,23 @@ proc vec*(dir: Direction): Vec2i =
 
 proc `+`*(v1, v2: Vec2i): Vec2i =
   vec(v1.x + v2.x, v1.y + v2.y)
+
+proc `-`*(v1, v2: Vec2i): Vec2i =
+  vec(v1.x - v2.x, v1.y - v2.y)
+
+proc `*`*(v: Vec2i, mult: int): Vec2i =
+  vec(v.x * mult, v.y * mult)
+
+proc `div`*(v: Vec2i, divider: int): Vec2i =
+  vec(v.x div divider, v.y div divider)
+
+proc clamp*(v: Vec2i, minVec, maxVec: Vec2i): Vec2i =
+  vec(clamp(v.x, minVec.x, maxVec.x), clamp(v.y, minVec.y, maxVec.y))
+
+proc clamp*(rect: Rect2i, minVec, maxVec: Vec2i): Rect2i =
+  let pos = clamp(rect.pos, minVec, maxVec)
+  let size = clamp(rect.size, vec(0, 0), maxVec - pos)
+  result = newRect(pos, size)
 
 iterator directions*(): Direction =
   yield(dirUp)
@@ -66,3 +111,24 @@ proc `$`*(exceptn: ref Exception): string =
   if exceptn.parent != nil:
     result.add("Caused by:\n")
     result.add($exceptn.parent)
+
+proc newRandom*(seed: uint32): Random =
+  Random(
+    mt: newMersenneTwister(seed.uint32)
+  )
+
+proc getFloat*(random: Random): float =
+  random.mt.getNum().float / high(uint32).float
+
+proc getInt*(random: Random, maxValue: int = high(int32)): int =
+  min(int(random.getFloat() * maxValue.float), maxValue - 1)
+
+proc getInt*(random: Random, minValue, maxValue: int): int =
+  random.getInt(maxValue - minValue) + minValue
+
+proc getVec*(random: Random, maxVec: Vec2i): Vec2i =
+  let idx = random.getInt(maxVec.x * maxVec.y)
+  result = vec(idx mod maxVec.x, idx div maxVec.x)
+
+proc select*[T](random: Random, values: openarray[T]): T =
+  values[random.getInt(values.len)]

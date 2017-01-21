@@ -5,6 +5,7 @@ import model.config, model.world
 import visual.sdlapp
 
 try:
+  initSDLSystem()
   loadConfig()
   var myWorld = newWorld()
   var myApp = initSDLApp("Game App", myWorld)
@@ -16,7 +17,7 @@ try:
 
     myApp.destroy()
   except:
-    error("Unhandled exception:" & $getCurrentException())
+    error("Unhandled exception: " & $getCurrentException())
 
 except:
   echo getCurrentException()

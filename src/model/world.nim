@@ -10,7 +10,10 @@ type LogicError* = object of Exception
 
 type ObjectActionKind* = enum
   aMove,
-  aInteract
+  aInteract,
+  aSkill,
+  aUseItem,
+  aWait
 
 type WorldObjectKind* = enum
   woPlayer,
@@ -54,6 +57,7 @@ type ObjectAction* = ref object
     moveDir: Direction
   of aInteract:
     objectId: WorldObjectId
+  of aSkill, aUseItem, aWait: discard #TODO
 
 proc newActionMove*(moveDir: Direction): ObjectAction =
   ObjectAction(
@@ -99,9 +103,9 @@ proc genId(this: WorldLevel): WorldObjectId =
   inc this.lastId
   result = this.lastId
 
-proc newWorldLevel*(): WorldLevel =
+proc newWorldLevel*(random: Random): WorldLevel =
   result = WorldLevel(
-    tileMap: newTileMap(vec(20, 20)),
+    tileMap: newTileMap(vec(60, 40), random),
     objects: newSeq[WorldObject](),
     lastId: WorldObjectId(0)
   )
@@ -150,6 +154,7 @@ proc makeTurn*(this: AIController) =
       this.makeDecision(obj)
 
 type World* = ref object
+  random*: Random
   level*: WorldLevel
   ai: AIController
   player: Player
@@ -157,9 +162,10 @@ type World* = ref object
 
 proc newWorld*(): World =
   result = World(
-    level: newWorldLevel(),
+    random: newRandom(100500),
     age: 0
   )
+  result.level = newWorldLevel(result.random)
   result.ai = AIController(level: result.level)
 
 proc playOnce(this: World, maxdt: int): int =

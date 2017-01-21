@@ -25,5 +25,5 @@
     "nim.buildCommand": "c",
     "nim.lintOnSave": true,
     "nim.project": ["game.nim"],
-    "nim.licenseString": "# Copyright Evgeny Zuev 2016.\n\n"
+    "nim.licenseString": "# Copyright (c) Evgeny Zuev 2017.\n\n"
 }

@@ -66,20 +66,19 @@ proc alive*(this: SDLApp): bool = this.alive
 proc exit*(this: SDLApp) =
   this.alive = false
 
-proc initSDLApp*(title: string, world: World): SDLApp =
+proc initSDLSystem*() =
   addHandler(SDLLogger())
   info "SDL logger initialized"
+  sdlCall: sdl.init(sdl.InitVideo)
+  sdlCall: ttf.init()
 
+proc initSDLApp*(title: string, world: World): SDLApp =
   result = SDLApp(
     alive: false,
     window: nil,
     renderer: nil,
     world: world
   )
-
-  sdlCall: sdl.init(sdl.InitVideo)
-
-  sdlCall: ttf.init()
 
   result.window = sdl.createWindow(
     title,
@@ -105,10 +104,12 @@ proc renderFrame*(this: SDLApp) =
   r.setColor(rgba(0xFF000000))
   sdlCall: r.renderClear()
 
+  const cellSize = 16
+
   let level = this.world.level
   for v, tile in level.map:
     r.setColor(tile.passable ? rgba(0xFF5777BC) or rgba(0xFF5B24A4))
-    r.fillRect(32 * v.x, 32 * v.y, 32, 32)
+    r.fillRect(cellSize * v.x, cellSize * v.y, cellSize, cellSize)
 
   for obj in level.objects:
     case obj.kind
@@ -116,7 +117,7 @@ proc renderFrame*(this: SDLApp) =
       r.setColor(rgba(0xFFA07BD2))
     of woNPC:
       r.setColor(rgba(0xFF088F4A))
-    r.fillRect(32 * obj.pos.x, 32 * obj.pos.y, 32, 32)
+    r.fillRect(cellSize * obj.pos.x, cellSize * obj.pos.y, cellSize, cellSize)
 
   r.renderText(vec(650, 10), "Hello, world", this.font, rgba(0xFFffffff))
 
