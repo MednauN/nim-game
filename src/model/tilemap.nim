@@ -2,24 +2,31 @@
 
 import utils, sequtils
 
-type TileKind* {.pure.} = enum
-  Wall,
-  Floor
+type
+  TileKind* {.pure.} = enum
+    Wall,
+    Floor
 
-type TileInfo* = object
-  kind*: TileKind
-  roomId*: int
+  TileInfo* = object
+    kind*: TileKind
+    roomId*: int
 
-type TileMapRoom* = ref object
-  id*: int
-  rect*: Rect2i
-  adjacentRooms*: seq[int]
+  TileMapRoom* = ref object
+    id*: int
+    rect*: Rect2i
+    adjacentRooms*: seq[int]
 
-type TileMap* = ref object
-  random: Random
-  tiles: seq[TileInfo]
-  rooms: seq[TileMapRoom]
-  size: Vec2i
+  TileMapCorridor* = ref object
+    startRoomId*: int
+    endRoomId*: int
+    cells*: seq[Vec2i]
+
+  TileMap* = ref object
+    random: Random
+    tiles*: seq[TileInfo]
+    rooms*: seq[TileMapRoom]
+    corridors*: seq[TileMapCorridor]
+    size*: Vec2i
 
 #---TileInfo methods
 proc passable*(this: TileInfo): bool {.inline.} =
@@ -47,6 +54,9 @@ iterator cells*(this: TileMap): Vec2i =
   for x in 0..<this.size.x:
     for y in 0..<this.size.y:
       yield vec(x, y)
+
+proc contains*(this: TileMap, v: Vec2i): bool =
+  v.x >= 0 and v.y >= 0 and v.x < this.size.x and v.y < this.size.y
 
 iterator pairs*(this: TileMap): (Vec2i, var TileInfo) =
   for v in this.cells:
@@ -108,6 +118,22 @@ proc generateRooms*(this: TileMap) =
     else:
       inc failCount
 
+proc corridorEndPos(this: TileMap, pos: Vec2i, startRoom: TileMapRoom): Option[seq[Vec2i]] =
+  for dir in directions():
+    let cell = pos + vec(dir)
+    if cell notin this:
+      continue
+    if this[cell].passable and this[cell].roomId != startRoom.id:
+      return some(@[cell])
+
+  for cell in neighbors(pos):
+    if cell notin this:
+      continue
+    if this[cell].passable and this[cell].roomId != startRoom.id:
+      return some(@[pos + vec(direction(pos - cell)), cell])
+
+  return none(seq[Vec2i])
+
 proc makeCorridor*(this: TileMap, startRoom, endRoom: TileMapRoom): seq[Vec2i] =
   let startRect = newRect(startRoom.rect.pos + vec(1, 1), startRoom.rect.size - vec(2, 2))
   let startPoint = this.random.select(toSeq(startRect.perimeter()))
@@ -117,12 +143,10 @@ proc makeCorridor*(this: TileMap, startRoom, endRoom: TileMapRoom): seq[Vec2i] =
   var dirX = this.random.getInt(100) <= 50
   var pos = startPoint
   while pos != endPoint:
-    for dir in directions():
-      let cell = pos + vec(dir)
-      if cell.x > 0 and cell.y > 0 and cell.x < this.size.x and cell.y < this.size.y:
-        if this[cell].passable and this[cell].roomId != startRoom.id:
-          result.add(cell)
-          break
+    let endPos = this.corridorEndPos(pos, startRoom)
+    if endPos.isSome:
+      result &= endPos.get()
+      break
     if dirX and pos.x == endPoint.x:
       dirX = false
     if not dirX and pos.y == endPoint.y:
@@ -157,8 +181,20 @@ proc generateCorridors*(this: TileMap) =
         continue
       room.adjacentRooms.add(destRoomId)
       destRoom.adjacentRooms.add(room.id)
+      info "Corridor from $# to $# len $#" % [$room.id, $destRoom.id, $corridor.len]
       for cell in corridor:
         this[cell].kind = TileKind.Floor
+      var startIndex = 0
+      while this[corridor[startIndex]].roomId != 0:
+        inc startIndex
+      var endIndex = corridor.len - 1
+      while this[corridor[endIndex]].roomId != 0:
+        dec endIndex
+      this.corridors.add(TileMapCorridor(
+        startRoomId: room.id,
+        endRoomId: destRoom.id,
+        cells: corridor[startIndex..endIndex]
+      ))
 
 
 proc newTileMap*(size: Vec2i, random: Random): TileMap =
@@ -166,6 +202,7 @@ proc newTileMap*(size: Vec2i, random: Random): TileMap =
     size: size,
     tiles: newSeq[TileInfo](size.x * size.y),
     rooms: @[],
+    corridors: @[],
     random: random
   )
   result.generateRooms()

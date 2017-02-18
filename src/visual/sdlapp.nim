@@ -1,10 +1,12 @@
 # Copyright Evgeny Zuev 2016.
 
 import sdl2/sdl, sdl2/sdl_image as img, sdl2/sdl_ttf as ttf
+import tables
 import model.utils
-import model.world, model.tilemap
+import model.worldobject, model.world, model.tilemap
 
 const ScreenSize = vec(1280, 720)
+const CellSize = vec(48, 48)
 const WindowFlags = 0
 const RendererFlags = sdl.RendererAccelerated or sdl.RendererPresentVsync
 
@@ -42,9 +44,13 @@ proc rgba(color: int64 or uint32): Color =
 proc setColor(this: sdl.Renderer, color: Color) =
   sdlCall: this.setRenderDrawColor(color.r, color.g, color.b, color.a)
 
-proc fillRect(this: sdl.Renderer, x, y, w, h: int) =
-  var rect = sdl.Rect(x: x, y: y, w: w, h: h)
-  sdlCall: this.renderFillRect(addr(rect))
+proc fillRect(this: sdl.Renderer, rect: Rect2i) =
+  var sdlRect = sdl.Rect(x: rect.pos.x, y: rect.pos.y, w: rect.size.x, h: rect.size.y)
+  sdlCall: this.renderFillRect(addr(sdlRect))
+
+proc drawRect(this: sdl.Renderer, rect: Rect2i) =
+  var sdlRect = sdl.Rect(x: rect.pos.x, y: rect.pos.y, w: rect.size.x, h: rect.size.y)
+  sdlCall: this.renderDrawRect(addr(sdlRect))
 
 proc renderText(this: sdl.Renderer, pos: Vec2i, text: string, font: ttf.Font, color: Color) =
   var surface = font.renderUTF8_Blended(text, color)
@@ -59,7 +65,9 @@ type SDLApp* = ref object
   window: sdl.Window
   renderer: sdl.Renderer
   font: ttf.Font
+  charFont: ttf.Font
   world: World
+  viewport: Rect2i
 
 proc alive*(this: SDLApp): bool = this.alive
 
@@ -71,6 +79,12 @@ proc initSDLSystem*() =
   info "SDL logger initialized"
   sdlCall: sdl.init(sdl.InitVideo)
   sdlCall: ttf.init()
+
+proc updateViewport*(this: SDLApp) =
+  this.viewport = newRect(vec(0, 0), vec(19, 15))
+  this.viewport.pos = clamp(this.world.playerObj.pos - (this.viewport.size div 2),
+                            vec(0, 0),
+                            this.world.map.size - this.viewport.size)
 
 proc initSDLApp*(title: string, world: World): SDLApp =
   result = SDLApp(
@@ -94,30 +108,84 @@ proc initSDLApp*(title: string, world: World): SDLApp =
   raiseIf(result.renderer == nil, "Can't create renderer")
 
   result.font = ttf.openFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
-  raiseIf(result.font == nil, "Cannot load font")
+  raiseIf(result.font == nil, "Cannot load main font")
 
+  result.charFont = ttf.openFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36)
+  raiseIf(result.charFont == nil, "Cannot load character font")
+
+  result.updateViewport()
   result.alive = true
   info "SDL initialized"
+
+proc screenCellRect(this: SDLApp, cell: Vec2i): Rect2i =
+  var screenPos = cell - this.viewport.pos
+  screenPos.x *= CellSize.x
+  screenPos.y *= CellSize.y
+  result = newRect(screenPos, CellSize)
+
+proc drawCharacter(this: SDLApp, cell: Vec2i, charStr: string, bgColor: Color, charColor: Color) =
+  let screenRect = this.screenCellRect(cell)
+  this.renderer.setColor(bgColor)
+  this.renderer.fillRect(screenRect)
+  if charStr.len == 0:
+    return
+  var surface = this.charFont.renderUTF8_Blended(charStr, charColor)
+  var texture = sdl.createTextureFromSurface(this.renderer, surface)
+  try:
+    let offset = (screenRect.size - vec(surface.w, surface.h)) div 2
+    var rect = sdl.Rect(x: screenRect.pos.x + offset.x, y: screenRect.pos.y + offset.y, w: surface.w, h: surface.h)
+    sdlCall: this.renderer.renderCopy(texture, nil, addr(rect))
+  finally:
+    destroyTexture(texture)
+    sdl.freeSurface(surface)
 
 proc renderFrame*(this: SDLApp) =
   let r = this.renderer
   r.setColor(rgba(0xFF000000))
   sdlCall: r.renderClear()
 
-  const cellSize = 16
+  # Render world
+  let world = this.world
 
-  let level = this.world.level
-  for v, tile in level.map:
-    r.setColor(tile.passable ? rgba(0xFF5777BC) or rgba(0xFF5B24A4))
-    r.fillRect(cellSize * v.x, cellSize * v.y, cellSize, cellSize)
+  # Render tiles
+  sdlCall: r.setRenderDrawBlendMode(BLENDMODE_NONE)
+  for v in this.viewport.cells:
+    let tile = world.map[v]
 
-  for obj in level.objects:
+    r.setColor(tile.passable ? rgba(0xFF9F6D47) or rgba(0xFF5D310F))
+    r.fillRect(this.screenCellRect(v))
+
+  # Render grid at the top of tiles
+  r.setColor(rgba(0x40000000))
+  sdlCall: r.setRenderDrawBlendMode(BLENDMODE_BLEND)
+  for v in this.viewport.cells:
+    r.drawRect(this.screenCellRect(v))
+
+  for obj in world.objects.values:
+    if obj.pos notin this.viewport:
+      continue
     case obj.kind
-    of woPlayer:
-      r.setColor(rgba(0xFFA07BD2))
-    of woNPC:
-      r.setColor(rgba(0xFF088F4A))
-    r.fillRect(cellSize * obj.pos.x, cellSize * obj.pos.y, cellSize, cellSize)
+    of WorldObjectKind.Door:
+      var screenRect = this.screenCellRect(obj.pos)
+      let isVertical = world.map[obj.pos + vec(1, 0)].passable
+      if obj.lockStats.closed:
+        if isVertical:
+          screenRect.pos.x += screenRect.size.x div 3
+          screenRect.size.x = screenRect.size.x div 3
+        else:
+          screenRect.pos.y += screenRect.size.y div 3
+          screenRect.size.y = screenRect.size.y div 3
+      else:
+        if isVertical:
+          screenRect.size.y = screenRect.size.y div 4
+        else:
+          screenRect.size.x = screenRect.size.x div 4
+      r.setColor(rgba(0xFF45250d))
+      r.fillRect(screenRect)
+    else: discard
+
+  # Render player
+  this.drawCharacter(world.playerObj.pos, "\u263A", rgba(0xFF41823A), rgba(0xFF000000))
 
   r.renderText(vec(650, 10), "Hello, world", this.font, rgba(0xFFffffff))
 
@@ -129,7 +197,18 @@ proc onKeyDown(this: SDLApp, key: sdl.Keycode) =
   of sdl.K_S: this.world.inputMove(dirDown)
   of sdl.K_A: this.world.inputMove(dirLeft)
   of sdl.K_D: this.world.inputMove(dirRight)
+  of sdl.K_F:
+    block mainCycle:
+      for dir in directions():
+        let cell = this.world.playerObj.pos + vec(dir)
+        for obj in this.world.objectsAt(cell):
+          if obj.lockStats != nil:
+            this.world.inputOpenCloseDoor(obj.id)
+            break mainCycle
   else: discard
+
+  this.world.play()
+  this.updateViewport()
 
 
 proc update*(this: SDLApp) =

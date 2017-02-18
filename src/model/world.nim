@@ -1,200 +1,161 @@
 # Copyright Evgeny Zuev 2016.
 
-import utils, tilemap
-import algorithm, sequtils, strutils
-
-type Player = ref object
-  name: string
+import utils, tilemap, worldobject
+import algorithm, sequtils, strutils, tables
 
 type LogicError* = object of Exception
 
-type ObjectActionKind* = enum
-  aMove,
-  aInteract,
-  aSkill,
-  aUseItem,
-  aWait
+type
+  ActionKind* {.pure.} = enum
+    Wait,
+    Move,
+    Open,
+    Close
 
-type WorldObjectKind* = enum
-  woPlayer,
-  woNPC
+  ObjectAction* = ref object
+    duration*: int
+    kind*: ActionKind
+    targetId*: WorldObjectId
+    targetCell*: Vec2i
 
-type WorldObjectId* = distinct int
+  Player* = ref object
+    id*: WorldObjectId
 
-type MicroTicks* = int64
+  World* = ref object
+    random*: Random
+    map*: TileMap
+    lastId*: WorldObjectId
+    objects*: TableRef[WorldObjectId, WorldObject]
+    pendingActions*: TableRef[WorldObjectId, ObjectAction]
+    player*: Player
+    age*: int64
 
-const ONE_TICK = 1000
-
-type RegVal* = object
-  value*: int
-  maxValue*: int
-  regenSpeed*: MicroTicks
-  regenMod*: MicroTicks
-
-proc newRegVal(maxValue: int, regenSpeed: MicroTicks, value: int = 0): RegVal =
-  RegVal(
-    value: min(value, maxValue),
-    maxValue: maxValue,
-    regenSpeed: regenSpeed,
-    regenMod: 0
-  )
-
-proc regenerate*(this: var RegVal, dt: MicroTicks) =
-  let ticks = (dt + this.regenMod) div this.regenSpeed
-  this.value = min(this.value + ticks.int, this.maxValue)
-  if this.value < this.maxValue:
-    this.regenMod = (dt + this.regenMod) mod this.regenSpeed
-  else:
-    this.regenMod = 0
-
-proc timeToFull*(this: RegVal): MicroTicks =
-  (this.maxValue - this.value) * this.regenSpeed - this.regenMod
-
-type ObjectAction* = ref object
-  needAP: int
-  case kind: ObjectActionKind
-  of aMove:
-    moveDir: Direction
-  of aInteract:
-    objectId: WorldObjectId
-  of aSkill, aUseItem, aWait: discard #TODO
-
-proc newActionMove*(moveDir: Direction): ObjectAction =
-  ObjectAction(
-    kind: aMove,
-    moveDir: moveDir,
-    needAP: 10
-  )
-
-type SecondaryStat* = enum
-  sstMinDamage,
-  sstMaxDamage,
-
-
-type WorldObject* = ref object
-  id: WorldObjectId
-  pos: Vec2i
-  kind: WorldObjectKind
-
-  hp: RegVal
-
-  action: ObjectAction
-
-proc pos*(this: WorldObject): Vec2i =
-  this.pos
-
-proc kind*(this: WorldObject): WorldObjectKind = this.kind
-
-proc newWorldObject*(id: WorldObjectId, pos: Vec2i, kind: WorldObjectKind): WorldObject =
-  result = WorldObject(
-    id: id,
-    pos: pos,
-    kind: kind,
-    action: nil,
-    hp: newRegVal(100, 10 * ONE_TICK, 100)
-  )
-
-type WorldLevel* = ref object
-  tileMap: TileMap
-  objects*: seq[WorldObject]
-  lastId: WorldObjectId
-
-proc genId(this: WorldLevel): WorldObjectId =
+proc genId(this: World): WorldObjectId =
   inc this.lastId
   result = this.lastId
 
-proc newWorldLevel*(random: Random): WorldLevel =
-  result = WorldLevel(
-    tileMap: newTileMap(vec(60, 40), random),
-    objects: newSeq[WorldObject](),
-    lastId: WorldObjectId(0)
-  )
-  result.objects.add(newWorldObject(result.genId(), vec(10, 10), woPlayer))
-  result.objects.add(newWorldObject(result.genId(), vec(5, 5), woNPC))
-  result.objects.add(newWorldObject(result.genId(), vec(15, 15), woNPC))
+proc playerObj*(this: World): WorldObject =
+  this.objects[this.player.id]
 
-proc map*(this: WorldLevel): TileMap =
-  this.tileMap
+iterator objectsAt*(this: World, cell: Vec2i): WorldObject =
+  for obj in this.objects.values:
+    if obj.pos == cell:
+      yield obj
 
-proc player*(this: WorldLevel): WorldObject =
-  result = this.objects.findIf((x) => x.kind == woPlayer).get()
-
-proc isPassable*(this: WorldLevel, pos: Vec2i): bool =
+proc isPassable*(this: World, pos: Vec2i): bool =
   if not this.map[pos].passable:
     return false
-  elif this.objects.anyIt(it.pos == pos):
-    return false
-
+  for obj in objectsAt(this, pos):
+    if not obj.passable:
+      return false
   return true
 
-proc moveObject*(this: WorldLevel, obj: WorldObject, pos: Vec2i) =
+proc moveObject*(this: World, obj: WorldObject, pos: Vec2i) =
   if this.isPassable(pos):
     obj.pos = pos
 
-proc invokeAction*(this: WorldLevel, obj: WorldObject, action: ObjectAction) =
+proc invokeAction*(this: World, obj: WorldObject, action: ObjectAction) =
   case action.kind
-  of aMove:
-    debug("Object $# moves $#" % [repr(obj.id), $action.moveDir])
-    this.moveObject(obj, obj.pos + vec(action.moveDir))
+  of ActionKind.Move:
+    debug "Object $# moves to $#" % [repr(obj.id), $action.targetCell]
+    this.moveObject(obj, action.targetCell)
+  of ActionKind.Open:
+    let door = this.objects.getOrDefault(action.targetId)
+    if door == nil or door.kind != WorldObjectKind.Door:
+      debug "Object $# is not a door" % $action.targetId
+    elif not door.pos.adjacentTo(obj.pos):
+      debug "Must stay at adjacent cell to close door"
+    elif not door.lockStats.closed:
+      debug "Door is already opened"
+    elif door.lockStats.locked:
+      debug "Door is locked"
+    else:
+      debug "Opened door $#" % $action.targetId
+      door.lockStats.closed = false
+  of ActionKind.Close:
+    let door = this.objects.getOrDefault(action.targetId)
+    if door == nil or door.kind != WorldObjectKind.Door:
+      debug "Object $# is not a door" % $action.targetId
+    elif not door.pos.adjacentTo(obj.pos):
+      debug "Must stay at adjacent cell to close door"
+    elif door.lockStats.closed:
+      debug "Door is already closed"
+    else:
+      debug "Closed door $#" % $action.targetId
+      door.lockStats.closed = true
   else: discard
-
-type AIController* = ref object
-  level*: WorldLevel
-
-proc makeDecision*(this: AIController, obj: WorldObject) =
-  assert obj.kind == woNPC
-
-  if obj.action == nil:
-    let dir = toSeq(directions()).findIf((x) => this.level.isPassable(obj.pos + x.vec))
-    obj.action = newActionMove(dir.get())
-
-proc makeTurn*(this: AIController) =
-  for obj in this.level.objects:
-    if obj.kind == woNPC:
-      this.makeDecision(obj)
-
-type World* = ref object
-  random*: Random
-  level*: WorldLevel
-  ai: AIController
-  player: Player
-  age: int64
 
 proc newWorld*(): World =
   result = World(
     random: newRandom(100500),
-    age: 0
+    objects: newTable[WorldObjectId, WorldObject](),
+    pendingActions: newTable[WorldObjectId, ObjectAction]()
   )
-  result.level = newWorldLevel(result.random)
-  result.ai = AIController(level: result.level)
+  let world = result
+  world.map = newTileMap(vec(60, 40), world.random)
+  world.player = Player(
+    id: world.genId()
+  )
+  let startRoom = world.random.select(world.map.rooms)
+  info "Placing player in room " & $startRoom.id
+  let startPos = world.random.getVec(startRoom.rect.size - vec(1, 1)) + startRoom.rect.pos
+  let playerObj = newWorldObject(world.player.id, startPos, WorldObjectKind.Character)
+  playerObj.fractionStats.fraction = CharacterFraction.Player
+  world.objects[playerObj.id] = playerObj
 
-proc playOnce(this: World, maxdt: int): int =
-  this.ai.makeTurn()
+  for corridor in world.map.corridors:
+    for pos in @[corridor.cells[0], corridor.cells[^1]]:
+      if world.isPassable(pos):
+        let door = newWorldObject(world.genId(), pos, WorldObjectKind.Door)
+        door.lockStats.closed = true
+        world.objects[door.id] = door
 
-  var objects = this.level.objects.filter((x) => x.action != nil)
-  objects.sort((x, y) => cmp(x.action.needAP, y.action.needAP))
-  if objects.len == 0:
-    return 0
-
-  let dt = objects.len == 0 ? maxdt or min(objects[0].action.needAP, maxdt)
-  for obj in objects:
-    obj.action.needAP -= dt
-    if obj.action.needAP == 0:
-      this.level.invokeAction(obj, obj.action)
-      obj.action = nil
+proc playOnce(this: World) =
+  var actionsSeq = toSeq(this.pendingActions.pairs)
+  # TODO shuffle actionsSeq
+  let dt = actionsSeq.foldL(max(a, b[1].duration), 0)
+  assert dt > 0
+  for id, action in actionsSeq.items():
+    if action.duration <= dt:
+      this.pendingActions.del(id)
+      this.invokeAction(this.objects[id], action)
+    else:
+      action.duration -= dt
 
   this.age += dt
-  result = dt
 
-proc play*(this: World, dt: int) =
-  var dtLeft = dt
-  while dtLeft > 0:
-    dtLeft -= this.playOnce(dtLeft)
+proc waitingForInput*(this: World): bool =
+  this.player.id notin this.pendingActions
+
+proc play*(this: World) =
+  if this.waitingForInput():
+    return
+
+  while not this.waitingForInput():
+    this.playOnce()
 
   debug("Turn ended, world age: " & $this.age)
 
+proc inputAction*(world: World, action: ObjectAction) =
+  assert world.waitingForInput()
+  world.pendingActions[world.player.id] = action
+
 proc inputMove*(world: World, dir: Direction) =
-  let newPos = world.level.player.pos + dir.vec
-  if world.level.isPassable(newPos):
-    world.level.moveObject(world.level.player, newPos)
-    world.play(10)
+  let newPos = world.playerObj.pos + dir.vec
+  if world.isPassable(newPos):
+    let action = ObjectAction(
+      duration: 10,
+      kind: ActionKind.Move,
+      targetCell: newPos
+    )
+    world.inputAction(action)
+
+proc inputOpenCloseDoor*(world: World, id: WorldObjectId) =
+  let obj = world.objects.getOrDefault(id)
+  if obj != nil and obj.kind == WorldObjectKind.Door:
+    let action = ObjectAction(
+      duration: 10,
+      kind: obj.lockStats.closed ? ActionKind.Open or ActionKind.Close,
+      targetId: id
+    )
+    world.inputAction(action)

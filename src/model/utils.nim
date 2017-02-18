@@ -42,6 +42,10 @@ iterator cells*(rect: Rect2i): Vec2i =
     for y in rect.pos.y..<rect.pos.y + rect.size.y:
       yield vec(x, y)
 
+proc contains*(rect: Rect2i, v: Vec2i): bool =
+  result = v.x >= rect.pos.x and v.y >= rect.pos.y and
+           v.x <= rect.pos.x + rect.size.x - 1 and v.y <= rect.pos.y + rect.size.y - 1
+
 proc vec*(dir: Direction): Vec2i =
   case dir
   of dirUp: vec(0, -1)
@@ -61,6 +65,13 @@ proc `*`*(v: Vec2i, mult: int): Vec2i =
 proc `div`*(v: Vec2i, divider: int): Vec2i =
   vec(v.x div divider, v.y div divider)
 
+iterator neighbors*(cell: Vec2i): Vec2i =
+  for p in perimeter(newRect(cell - vec(1, 1), vec(3, 3))):
+    yield p
+
+proc adjacentTo*(v1, v2: Vec2i): bool =
+  (abs(v1.x - v2.x) + abs(v1.y - v2.y)) == 1
+
 proc clamp*(v: Vec2i, minVec, maxVec: Vec2i): Vec2i =
   vec(clamp(v.x, minVec.x, maxVec.x), clamp(v.y, minVec.y, maxVec.y))
 
@@ -74,6 +85,16 @@ iterator directions*(): Direction =
   yield(dirDown)
   yield(dirLeft)
   yield(dirRight)
+
+proc direction*(v: Vec2i): Direction =
+  if v.y > 0:
+    dirUp
+  elif v.y < 0:
+    dirDown
+  elif v.x > 0:
+    dirRight
+  else:
+    dirLeft
 
 macro `?`*(cond, body: untyped): untyped =
   if body.kind != nnkInfix or not eqIdent(body[0], "or"):
